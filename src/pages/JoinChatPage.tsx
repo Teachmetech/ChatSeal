@@ -22,12 +22,18 @@ function JoinChatContent() {
 
   const [roomId, setRoomId] = useState(searchParams.get("id") ?? "");
   const [nickname, setNickname] = useState("");
-  const [passphrase, setPassphrase] = useState("");
+  const [passphrase, setPassphrase] = useState(searchParams.get("passphrase") ?? "");
   const [isJoining, setIsJoining] = useState(false);
+
+  // Only query when roomId looks like a valid Convex ID (to avoid validation errors while typing)
+  const isValidRoomIdFormat = (id: string) => {
+    // Convex IDs are typically 25+ characters long and alphanumeric
+    return id.length >= 25 && /^[a-zA-Z0-9]+$/.test(id);
+  };
 
   const room = useQuery(
     api.chat.getRoom,
-    roomId ? { roomId: roomId as Id<"rooms"> } : "skip"
+    roomId && isValidRoomIdFormat(roomId) ? { roomId: roomId as Id<"rooms"> } : "skip"
   );
 
   useEffect(() => {
@@ -99,9 +105,16 @@ function JoinChatContent() {
         Back to Home
       </button>
       <h1 className="text-3xl font-bold text-white mb-2">Join a Chat</h1>
-      <p className="text-gray-400 mb-8">
+      <p className="text-gray-400 mb-4">
         Enter the Room ID and your details to join.
       </p>
+      {searchParams.get("passphrase") && (
+        <div className="mb-4 p-3 bg-emerald-900/20 border border-emerald-700 rounded-md">
+          <p className="text-emerald-400 text-sm">
+            ✓ Passphrase has been automatically filled from the shared link.
+          </p>
+        </div>
+      )}
       <form onSubmit={handleJoin} className="flex flex-col gap-4">
         <input
           type="text"
@@ -129,17 +142,17 @@ function JoinChatContent() {
         <button
           type="submit"
           className="auth-button mt-4"
-          disabled={isJoining || (roomId !== "" && room === undefined)}
+          disabled={isJoining || (roomId !== "" && isValidRoomIdFormat(roomId) && room === undefined)}
         >
           {isJoining ? (
             <Loader2 className="animate-spin mx-auto" />
-          ) : room === undefined && roomId !== "" ? (
+          ) : room === undefined && roomId !== "" && isValidRoomIdFormat(roomId) ? (
             <Loader2 className="animate-spin mx-auto" />
           ) : (
             "Join Chat"
           )}
         </button>
-        {roomId && room === null && (
+        {roomId && isValidRoomIdFormat(roomId) && room === null && (
           <p className="text-red-400 text-sm mt-2 text-center">
             Room not found or has expired.
           </p>

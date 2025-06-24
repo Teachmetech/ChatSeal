@@ -8,6 +8,7 @@ import { encryptData, decryptData, deriveKey } from "../lib/crypto";
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  ChevronDown,
   Copy,
   Download,
   File as FileIcon,
@@ -232,11 +233,42 @@ export default function ChatRoomPage() {
     toast.success("Chat history has been cleared for everyone in the room.");
   };
 
-  const copyShareLink = () => {
-    const url = `${window.location.origin}/join?id=${roomId}`;
+  const [showShareMenu, setShowShareMenu] = useState(false);
+
+  const copyShareLink = (includePassphrase: boolean = false) => {
+    if (!roomId) return;
+
+    let url = `${window.location.origin}/join?id=${roomId}`;
+
+    if (includePassphrase && room?.passphraseRequired) {
+      const storedPassphrase = localStorage.getItem(`chatseal_${roomId}_passphrase`);
+      if (storedPassphrase) {
+        url += `&passphrase=${encodeURIComponent(storedPassphrase)}`;
+      }
+    }
+
     navigator.clipboard.writeText(url);
-    toast.success("Share link copied to clipboard!");
+    const message = includePassphrase && room?.passphraseRequired
+      ? "Share link with passphrase copied to clipboard!"
+      : "Share link copied to clipboard!";
+    toast.success(message);
+    setShowShareMenu(false);
   };
+
+  // Close share menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showShareMenu && !target.closest('.share-menu-container')) {
+        setShowShareMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showShareMenu]);
 
   const typingUsers = useMemo(() => {
     return [];
@@ -246,7 +278,8 @@ export default function ChatRoomPage() {
   const presence = useMemo(() => {
     if (!presenceState || !Array.isArray(presenceState)) return [];
     const presenceData = presenceState as UserPresence[];
-    return presenceData.filter(p => p.online);
+    // Show all users (both online and offline) instead of filtering
+    return presenceData;
   }, [presenceState]);
 
   if (!isReady || !room || !currentUser) {
@@ -268,6 +301,9 @@ export default function ChatRoomPage() {
           roomName={room.name}
           onBack={() => navigate("/")}
           onCopyLink={copyShareLink}
+          showShareMenu={showShareMenu}
+          setShowShareMenu={setShowShareMenu}
+          hasPassphrase={room.passphraseRequired}
         />
         <MessageArea messages={decryptedMessages} currentUser={nickname} />
         <TypingIndicator typingUsers={typingUsers} currentUser={nickname} />
@@ -281,7 +317,21 @@ export default function ChatRoomPage() {
   );
 }
 
-const Header = ({ roomName, onBack, onCopyLink }: { roomName?: string; onBack: () => void; onCopyLink: () => void; }) => (
+const Header = ({
+  roomName,
+  onBack,
+  onCopyLink,
+  showShareMenu,
+  setShowShareMenu,
+  hasPassphrase
+}: {
+  roomName?: string;
+  onBack: () => void;
+  onCopyLink: (includePassphrase?: boolean) => void;
+  showShareMenu: boolean;
+  setShowShareMenu: (show: boolean) => void;
+  hasPassphrase: boolean;
+}) => (
   <header className="flex items-center justify-between p-4 border-b border-gray-700">
     <div className="flex items-center gap-4">
       <button onClick={onBack} className="text-gray-400 hover:text-white">
@@ -289,9 +339,45 @@ const Header = ({ roomName, onBack, onCopyLink }: { roomName?: string; onBack: (
       </button>
       <h2 className="text-xl font-bold text-white">{roomName || "Chat"}</h2>
     </div>
-    <button onClick={onCopyLink} className="flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-emerald-500 hover:bg-emerald-600 transition-colors">
-      <Copy size={16} /> Share Link
-    </button>
+    <div className="relative share-menu-container">
+      {hasPassphrase ? (
+        <>
+          <button
+            onClick={() => setShowShareMenu(!showShareMenu)}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-emerald-500 hover:bg-emerald-600 transition-colors"
+          >
+            <Copy size={16} /> Share Link <ChevronDown size={14} />
+          </button>
+          {showShareMenu && (
+            <div className="absolute right-0 top-full mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+              <div className="p-2">
+                <button
+                  onClick={() => onCopyLink(false)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md transition-colors"
+                >
+                  <Copy size={14} />
+                  Share link only
+                </button>
+                <button
+                  onClick={() => onCopyLink(true)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md transition-colors"
+                >
+                  <Copy size={14} />
+                  Share link with passphrase
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <button
+          onClick={() => onCopyLink(false)}
+          className="flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-emerald-500 hover:bg-emerald-600 transition-colors"
+        >
+          <Copy size={16} /> Share Link
+        </button>
+      )}
+    </div>
   </header>
 );
 
@@ -319,6 +405,7 @@ const MessageArea = ({ messages, currentUser }: { messages: DecryptedMessage[]; 
 const MessageBubble = memo(({ message, isCurrentUser }: { message: DecryptedMessage; isCurrentUser: boolean; }) => {
   const { key } = useCrypto();
   const [decryptedFileUrl, setDecryptedFileUrl] = useState<string | null>(null);
+  const [decryptedBlob, setDecryptedBlob] = useState<Blob | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
 
   useEffect(() => {
@@ -334,6 +421,7 @@ const MessageBubble = memo(({ message, isCurrentUser }: { message: DecryptedMess
           const blob = new Blob([decryptedBuffer], { type: message.file.type });
           objectUrl = URL.createObjectURL(blob);
           setDecryptedFileUrl(objectUrl);
+          setDecryptedBlob(blob);
         } catch (e) {
           console.error("Failed to decrypt file", e);
           toast.error(`Could not decrypt file: ${message.content}`);
@@ -348,11 +436,27 @@ const MessageBubble = memo(({ message, isCurrentUser }: { message: DecryptedMess
     };
   }, [message, key, decryptedFileUrl]);
 
+  const handleDownload = () => {
+    if (decryptedBlob && message.content) {
+      const url = URL.createObjectURL(decryptedBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = message.content;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('File downloaded successfully!');
+    }
+  };
+
   const isImage = message.file?.type.startsWith("image/");
+  const isVideo = message.file?.type.startsWith("video/");
+  const isAudio = message.file?.type.startsWith("audio/");
 
   return (
     <div className={`flex items-end gap-2 my-3 ${isCurrentUser ? "justify-end" : "justify-start"}`}>
-      <div className={`flex flex-col max-w-xs md:max-w-md ${isCurrentUser ? "items-end" : "items-start"}`}>
+      <div className={`flex flex-col max-w-xs md:max-w-lg ${isCurrentUser ? "items-end" : "items-start"}`}>
         <span className="text-xs text-gray-400 px-1 mb-1">{message.author}</span>
         <div className={`px-4 py-2 rounded-2xl ${isCurrentUser ? "bg-emerald-600 rounded-br-md" : "bg-gray-700 rounded-bl-md"}`}>
           {!message.isFile ? (
@@ -360,15 +464,70 @@ const MessageBubble = memo(({ message, isCurrentUser }: { message: DecryptedMess
           ) : isDecrypting ? (
             <div className="flex items-center gap-2 text-white/80"><Loader2 className="w-4 h-4 animate-spin" /><span>Decrypting...</span></div>
           ) : decryptedFileUrl ? (
-            isImage ? (
-              <img src={decryptedFileUrl} alt={message.content} className="rounded-md max-h-64 cursor-pointer" onClick={() => window.open(decryptedFileUrl, "_blank")} />
-            ) : (
-              <a href={decryptedFileUrl} download={message.content} className="flex items-center gap-3">
-                <FileIcon className="w-5 h-5" />
-                <span className="truncate">{message.content}</span>
-                <Download className="w-4 h-4 text-gray-300" />
-              </a>
-            )
+            <div className="space-y-2">
+              {isImage ? (
+                <div className="space-y-2">
+                  <img
+                    src={decryptedFileUrl}
+                    alt={message.content}
+                    className="rounded-md max-h-80 max-w-full cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => window.open(decryptedFileUrl, "_blank")}
+                  />
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 text-xs px-2 py-1 bg-black/30 hover:bg-black/50 rounded-md transition-colors"
+                  >
+                    <Download className="w-3 h-3" />
+                    Download {message.content}
+                  </button>
+                </div>
+              ) : isVideo ? (
+                <div className="space-y-2">
+                  <video
+                    src={decryptedFileUrl}
+                    controls
+                    className="rounded-md max-h-80 max-w-full"
+                    preload="metadata"
+                  >
+                    Your browser does not support video playback.
+                  </video>
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 text-xs px-2 py-1 bg-black/30 hover:bg-black/50 rounded-md transition-colors"
+                  >
+                    <Download className="w-3 h-3" />
+                    Download {message.content}
+                  </button>
+                </div>
+              ) : isAudio ? (
+                <div className="space-y-2">
+                  <audio
+                    src={decryptedFileUrl}
+                    controls
+                    className="w-full max-w-sm"
+                    preload="metadata"
+                  >
+                    Your browser does not support audio playback.
+                  </audio>
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 text-xs px-2 py-1 bg-black/30 hover:bg-black/50 rounded-md transition-colors"
+                  >
+                    <Download className="w-3 h-3" />
+                    Download {message.content}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center gap-3 hover:bg-black/20 p-2 rounded-md transition-colors"
+                >
+                  <FileIcon className="w-5 h-5" />
+                  <span className="truncate">{message.content}</span>
+                  <Download className="w-4 h-4 text-gray-300" />
+                </button>
+              )}
+            </div>
           ) : (
             <div className="flex items-center gap-2 text-red-400/80"><FileIcon className="w-5 h-5" /><span>Decryption failed</span></div>
           )}
@@ -392,6 +551,7 @@ const ActionBar = ({ onClearMe, onClearAll }: { onClearMe: () => void; onClearAl
 const MessageInput = ({ onSend, onTyping }: { onSend: (content: string, isFile?: boolean, file?: File) => void; onTyping: () => void; }) => {
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -399,6 +559,7 @@ const MessageInput = ({ onSend, onTyping }: { onSend: (content: string, isFile?:
     if (file) {
       onSend(file.name, true, file);
       setFile(null);
+      setFilePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } else if (text.trim()) {
       onSend(text);
@@ -408,13 +569,31 @@ const MessageInput = ({ onSend, onTyping }: { onSend: (content: string, isFile?:
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
-      if (e.target.files[0].size > 5 * 1024 * 1024) { // 5MB limit
+      const selectedFile = e.target.files[0];
+      if (selectedFile.size > 5 * 1024 * 1024) { // 5MB limit
         toast.error("File size cannot exceed 5MB.");
         return;
       }
-      setFile(e.target.files[0]);
+      setFile(selectedFile);
       setText("");
+
+      // Create preview for images
+      if (selectedFile.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFilePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(selectedFile);
+      } else {
+        setFilePreview(null);
+      }
     }
+  };
+
+  const clearFile = () => {
+    setFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -422,16 +601,54 @@ const MessageInput = ({ onSend, onTyping }: { onSend: (content: string, isFile?:
     onTyping();
   }
 
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith("image/")) return <ImageIcon className="w-5 h-5 text-blue-400" />;
+    if (fileType.startsWith("video/")) return <FileIcon className="w-5 h-5 text-red-400" />;
+    if (fileType.startsWith("audio/")) return <FileIcon className="w-5 h-5 text-green-400" />;
+    return <FileIcon className="w-5 h-5 text-gray-400" />;
+  };
+
   return (
     <form onSubmit={handleSubmit} className="p-4 border-t border-gray-700 bg-gray-900 rounded-b-xl">
       {file && (
-        <div className="flex items-center justify-between bg-gray-700 p-2 rounded-md mb-2">
-          <div className="flex items-center gap-2 truncate"><FileIcon className="w-5 h-5 text-gray-400" /><span className="text-sm truncate">{file.name}</span></div>
-          <button type="button" onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} className="text-gray-400 hover:text-white"><X size={18} /></button>
+        <div className="bg-gray-700 p-3 rounded-md mb-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              {filePreview ? (
+                <img
+                  src={filePreview}
+                  alt={file.name}
+                  className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                />
+              ) : (
+                <div className="w-16 h-16 bg-gray-600 rounded-md flex items-center justify-center flex-shrink-0">
+                  {getFileIcon(file.type)}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white truncate">{file.name}</p>
+                <p className="text-xs text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                <p className="text-xs text-gray-400 capitalize">{file.type.split('/')[0]} file</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={clearFile}
+              className="text-gray-400 hover:text-white flex-shrink-0"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
       )}
       <div className="flex items-center gap-2">
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar"
+        />
         <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full transition-colors"><Paperclip size={20} /></button>
         <input type="text" value={text} onChange={handleTextChange} placeholder="Type your message..." className="flex-1 bg-gray-700 px-4 py-2 rounded-full outline-none focus:ring-2 focus:ring-emerald-500" disabled={!!file} />
         <button type="submit" className="p-3 bg-emerald-500 rounded-full hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={!text.trim() && !file}><Send size={20} className="text-white" /></button>
@@ -441,14 +658,18 @@ const MessageInput = ({ onSend, onTyping }: { onSend: (content: string, isFile?:
 };
 
 const UserSidebar = ({ users, currentUser }: { users: UserPresence[], currentUser: string }) => {
+  const onlineCount = users.filter(user => user.online).length;
+
   return (
     <aside className="w-64 bg-gray-800/50 p-4 border-r border-gray-700 flex flex-col">
-      <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Users size={20} /> Online Users ({users.length})</h3>
+      <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Users size={20} /> Online Users ({onlineCount})</h3>
       <ul className="space-y-2 overflow-y-auto">
         {users.map(user => (
           <li key={user.userId} className="flex items-center gap-2 text-sm">
-            <span className="w-2.5 h-2.5 rounded-full bg-green-400"></span>
-            <span className="truncate">{user.data?.name}{user.data?.name === currentUser && " (You)"}</span>
+            <span className={`w-2.5 h-2.5 rounded-full ${user.online ? 'bg-green-400' : 'bg-gray-500'}`}></span>
+            <span className={`truncate ${user.online ? 'text-white' : 'text-gray-400'}`}>
+              {user.data?.name}{user.data?.name === currentUser && " (You)"}
+            </span>
           </li>
         ))}
       </ul>
