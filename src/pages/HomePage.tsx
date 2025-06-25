@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
-import { ShieldCheck } from "lucide-react";
+import Logo from "../components/Logo";
 
 export default function HomePage() {
   return (
     <div className="w-full max-w-md mx-auto text-center">
       <div className="flex justify-center items-center gap-3 mb-6">
-        <ShieldCheck className="w-12 h-12 text-emerald-400" />
+        <Logo size={48} color="emerald" />
         <h1 className="text-5xl font-bold text-white">ChatSeal</h1>
       </div>
       <p className="text-lg text-gray-400 mb-10">
@@ -17,13 +17,13 @@ export default function HomePage() {
           to="/create"
           className="flex-1 px-6 py-4 rounded-lg bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition-colors shadow-lg hover:shadow-emerald-500/30"
         >
-          Create Chat
+          Create ChatSeal
         </Link>
         <Link
           to="/join"
           className="flex-1 px-6 py-4 rounded-lg bg-gray-700 text-white font-semibold hover:bg-gray-600 transition-colors shadow-lg hover:shadow-gray-700/30"
         >
-          Join Chat
+          Join ChatSeal
         </Link>
       </div>
     </div>

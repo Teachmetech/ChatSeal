@@ -9,13 +9,17 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   ChevronDown,
+  Clock,
   Copy,
   Download,
   File as FileIcon,
   Image as ImageIcon,
+  Info,
   Loader2,
+  Lock,
   Paperclip,
   Send,
+  Shield,
   Trash2,
   X,
   Users,
@@ -23,6 +27,7 @@ import {
 import usePresence, { PresenceState } from "@convex-dev/presence/react";
 import { useTyping } from "../hooks/useTyping";
 import TypingIndicator from "../components/TypingIndicator";
+import Logo from "../components/Logo";
 
 type MessageDoc = Doc<"messages"> & { url: string | null };
 type DecryptedMessage = {
@@ -43,6 +48,137 @@ type UserPresence = {
     name?: string;
     image?: string;
   };
+};
+
+const RoomStatsModal = ({ room, messageCount, onClose }: {
+  room: any;
+  messageCount: number;
+  onClose: () => void;
+}) => {
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString();
+  };
+
+  const getTimeUntilExpiry = () => {
+    if (!room?.expiresAt) return null;
+    const now = Date.now();
+    const expiryTime = room.expiresAt;
+    const timeLeft = expiryTime - now;
+
+    if (timeLeft <= 0) return "Expired";
+
+    const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''}, ${hours} hour${hours > 1 ? 's' : ''}`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''}, ${minutes} minute${minutes > 1 ? 's' : ''}`;
+    return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 rounded-lg max-w-md w-full p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <Logo size={20} color="white" />
+            Room Information
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Room Name */}
+          <div className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg">
+            <Users className="w-5 h-5 text-emerald-400" />
+            <div>
+              <p className="text-sm text-gray-400">Room Name</p>
+              <p className="text-white font-medium">{room?.name || "Unnamed Room"}</p>
+            </div>
+          </div>
+
+          {/* Encryption Status */}
+          <div className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg">
+            <Shield className="w-5 h-5 text-green-400" />
+            <div>
+              <p className="text-sm text-gray-400">Security</p>
+              <p className="text-white font-medium">End-to-End Encrypted</p>
+              <p className="text-xs text-gray-500">All messages and files are encrypted</p>
+            </div>
+          </div>
+
+          {/* Expiration */}
+          {room?.expiresAt && (
+            <div className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg">
+              <Clock className="w-5 h-5 text-orange-400" />
+              <div>
+                <p className="text-sm text-gray-400">Expires</p>
+                <p className="text-white font-medium">{formatDate(room.expiresAt)}</p>
+                <p className="text-xs text-gray-500">
+                  {getTimeUntilExpiry() === "Expired" ? (
+                    <span className="text-red-400">Expired</span>
+                  ) : (
+                    <>Time remaining: {getTimeUntilExpiry()}</>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Message Count */}
+          <div className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg">
+            <FileIcon className="w-5 h-5 text-blue-400" />
+            <div>
+              <p className="text-sm text-gray-400">Messages</p>
+              <p className="text-white font-medium">{messageCount} message{messageCount !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+
+          {/* Passphrase Protection */}
+          <div className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg">
+            <Lock className="w-5 h-5 text-purple-400" />
+            <div>
+              <p className="text-sm text-gray-400">Access Control</p>
+              <p className="text-white font-medium">
+                {room?.passphraseRequired ? "Passphrase Protected" : "Open Access"}
+              </p>
+              <p className="text-xs text-gray-500">
+                {room?.passphraseRequired
+                  ? "Requires passphrase to join"
+                  : "Anyone with the link can join"
+                }
+              </p>
+            </div>
+          </div>
+
+          {/* Created Date */}
+          {room?._creationTime && (
+            <div className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg">
+              <Clock className="w-5 h-5 text-gray-400" />
+              <div>
+                <p className="text-sm text-gray-400">Created</p>
+                <p className="text-white font-medium">{formatDate(room._creationTime)}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="pt-4 border-t border-gray-700">
+          <button
+            onClick={onClose}
+            className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default function ChatRoomPage() {
@@ -234,6 +370,7 @@ export default function ChatRoomPage() {
   };
 
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showStats, setShowStats] = useState(false);
 
   const copyShareLink = (includePassphrase: boolean = false) => {
     if (!roomId) return;
@@ -304,6 +441,7 @@ export default function ChatRoomPage() {
           showShareMenu={showShareMenu}
           setShowShareMenu={setShowShareMenu}
           hasPassphrase={room.passphraseRequired}
+          onShowStats={() => setShowStats(true)}
         />
         <MessageArea messages={decryptedMessages} currentUser={nickname} />
         <TypingIndicator typingUsers={typingUsers} currentUser={nickname} />
@@ -313,6 +451,13 @@ export default function ChatRoomPage() {
         />
         <MessageInput onSend={handleSendMessage} onTyping={onStartTyping} />
       </div>
+      {showStats && (
+        <RoomStatsModal
+          room={room}
+          messageCount={decryptedMessages.length}
+          onClose={() => setShowStats(false)}
+        />
+      )}
     </div>
   );
 }
@@ -323,7 +468,8 @@ const Header = ({
   onCopyLink,
   showShareMenu,
   setShowShareMenu,
-  hasPassphrase
+  hasPassphrase,
+  onShowStats
 }: {
   roomName?: string;
   onBack: () => void;
@@ -331,52 +477,62 @@ const Header = ({
   showShareMenu: boolean;
   setShowShareMenu: (show: boolean) => void;
   hasPassphrase: boolean;
+  onShowStats: () => void;
 }) => (
   <header className="flex items-center justify-between p-4 border-b border-gray-700">
     <div className="flex items-center gap-4">
       <button onClick={onBack} className="text-gray-400 hover:text-white">
         <ArrowLeft size={20} />
       </button>
-      <h2 className="text-xl font-bold text-white">{roomName || "Chat"}</h2>
+      <h2 className="text-xl font-bold text-white">{roomName || "ChatSeal Room"}</h2>
     </div>
-    <div className="relative share-menu-container">
-      {hasPassphrase ? (
-        <>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={onShowStats}
+        className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full transition-colors"
+        title="Room Info"
+      >
+        <Info size={18} />
+      </button>
+      <div className="relative share-menu-container">
+        {hasPassphrase ? (
+          <>
+            <button
+              onClick={() => setShowShareMenu(!showShareMenu)}
+              className="flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-emerald-500 hover:bg-emerald-600 transition-colors"
+            >
+              <Copy size={16} /> Share Link <ChevronDown size={14} />
+            </button>
+            {showShareMenu && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                <div className="p-2">
+                  <button
+                    onClick={() => onCopyLink(false)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md transition-colors"
+                  >
+                    <Copy size={14} />
+                    Link only
+                  </button>
+                  <button
+                    onClick={() => onCopyLink(true)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md transition-colors"
+                  >
+                    <Copy size={14} />
+                    Link with passphrase
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
           <button
-            onClick={() => setShowShareMenu(!showShareMenu)}
+            onClick={() => onCopyLink(false)}
             className="flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-emerald-500 hover:bg-emerald-600 transition-colors"
           >
-            <Copy size={16} /> Share Link <ChevronDown size={14} />
+            <Copy size={16} /> Share Link
           </button>
-          {showShareMenu && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-              <div className="p-2">
-                <button
-                  onClick={() => onCopyLink(false)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md transition-colors"
-                >
-                  <Copy size={14} />
-                  Share link only
-                </button>
-                <button
-                  onClick={() => onCopyLink(true)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md transition-colors"
-                >
-                  <Copy size={14} />
-                  Share link with passphrase
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <button
-          onClick={() => onCopyLink(false)}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-emerald-500 hover:bg-emerald-600 transition-colors"
-        >
-          <Copy size={16} /> Share Link
-        </button>
-      )}
+        )}
+      </div>
     </div>
   </header>
 );

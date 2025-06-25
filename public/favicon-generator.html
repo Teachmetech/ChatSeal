@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatSeal Favicon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1f2937;
+            color: white;
+        }
+
+        .favicon-preview {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .favicon-item {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            background: #374151;
+        }
+
+        canvas {
+            border: 1px solid #6b7280;
+            margin: 10px 0;
+        }
+
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #059669;
+        }
+
+        .instructions {
+            background: #374151;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>ChatSeal Favicon Generator</h1>
+
+    <div class="instructions">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>This page will generate PNG versions of your ChatSeal logo for use as favicons</li>
+            <li>Click the "Generate" buttons below to create different sized favicons</li>
+            <li>Right-click on each generated image and "Save image as..." to download</li>
+            <li>Save them in the public directory with the suggested filenames</li>
+        </ol>
+    </div>
+
+    <div class="favicon-preview">
+        <div class="favicon-item">
+            <h3>16x16 Favicon</h3>
+            <canvas id="favicon16" width="16" height="16"></canvas>
+            <br>
+            <button onclick="generateFavicon(16)">Generate 16x16</button>
+            <button onclick="downloadCanvas('favicon16', 'favicon-16x16.png')">Download</button>
+            <p>Save as: favicon-16x16.png</p>
+        </div>
+
+        <div class="favicon-item">
+            <h3>32x32 Favicon</h3>
+            <canvas id="favicon32" width="32" height="32"></canvas>
+            <br>
+            <button onclick="generateFavicon(32)">Generate 32x32</button>
+            <button onclick="downloadCanvas('favicon32', 'favicon-32x32.png')">Download</button>
+            <p>Save as: favicon-32x32.png</p>
+        </div>
+
+        <div class="favicon-item">
+            <h3>180x180 Apple Touch</h3>
+            <canvas id="favicon180" width="180" height="180"></canvas>
+            <br>
+            <button onclick="generateFavicon(180)">Generate 180x180</button>
+            <button onclick="downloadCanvas('favicon180', 'apple-touch-icon.png')">Download</button>
+            <p>Save as: apple-touch-icon.png</p>
+        </div>
+
+        <div class="favicon-item">
+            <h3>192x192 Android</h3>
+            <canvas id="favicon192" width="192" height="192"></canvas>
+            <br>
+            <button onclick="generateFavicon(192)">Generate 192x192</button>
+            <button onclick="downloadCanvas('favicon192', 'android-chrome-192x192.png')">Download</button>
+            <p>Save as: android-chrome-192x192.png</p>
+        </div>
+    </div>
+
+    <script>
+        const svgString = `<svg id="Capa_1" enable-background="new 0 0 512 512" height="512" viewBox="0 0 512 512" width="512" xmlns="http://www.w3.org/2000/svg"><g><path d="m81.132 227.014c-10.755 0-19.907-3.879-26.466-11.216-.49-.548-.969-1.123-1.421-1.703l-3.346-4.296-5.437.296c-.637.035-1.277.05-1.918.05l-.353-.002c-12.532-.153-23.24-6.942-30.925-19.632-7.619-12.582-11.51-30.242-11.255-51.07.531-43.251 39.814-88.964 40.21-89.42.989-1.14 2.422-1.793 3.93-1.793 1.598.019 3.037.708 4.015 1.889 1.06 1.283 26.087 31.846 34.984 66.925l3.197 12.602 11.6-5.873c32.268-16.338 71.773-17.569 73.439-17.614l.025.001c1.552 0 3.006.633 3.991 1.734 1.021 1.144 1.486 2.67 1.274 4.19-.083.597-8.737 60.268-40.973 89.076-15.53 13.88-31.399 22.552-45.89 25.078-2.964.515-5.885.778-8.681.778z" fill="#10b981"/><path d="m437.955 379.832h-41.369l9.037-15.627c17.032-29.449 25.668-63.268 25.668-100.518 0-9.472.162-18.206.305-25.926.168-9.029.325-17.558.18-25.215l-.153-8.015 7.709-2.198c18.848-5.371 35.566-16.643 48.348-32.599 15.514-19.365 24.057-44.346 24.057-70.343 0-2.871-2.336-5.207-5.206-5.207h-111.367c-50.551 0-91.678 43.771-91.678 97.572 0 22.228-9.711 43.274-25.977 56.3-25.062 20.069-55.157 30.677-87.03 30.677-29.684 0-58.041-9.662-81.496-26.598-4.705 1.611-9.387 2.846-14.015 3.653-4.664.814-9.318 1.225-13.836 1.225-14.879 0-28.608-4.51-39.728-12.869-.611 6.467-.93 12.985-.93 19.543 0 110.328 87.66 200.087 195.409 200.087h270.91c2.871 0 5.207-2.336 5.207-5.207 0-43.414-33.216-78.735-74.045-78.735zm-39.255-237.51c4.846-3.955 11.849-4.503 17.217-1.265 5.354 3.228 8.254 9.643 7.002 15.795-1.408 6.919-7.628 12.07-14.71 12.07-6.252 0-12.021-4.061-14.11-9.952-2.09-5.894-.264-12.677 4.601-16.648z" fill="#10b981"/></g></svg>`;
+
+        function generateFavicon(size) {
+            const canvas = document.getElementById(`favicon${size}`);
+            const ctx = canvas.getContext('2d');
+
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+
+            // Create image from SVG
+            const img = new Image();
+            const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+
+            img.onload = function () {
+                ctx.drawImage(img, 0, 0, size, size);
+                URL.revokeObjectURL(url);
+            };
+
+            img.src = url;
+        }
+
+        function downloadCanvas(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Generate all sizes on page load
+        window.onload = function () {
+            setTimeout(() => {
+                generateFavicon(16);
+                generateFavicon(32);
+                generateFavicon(180);
+                generateFavicon(192);
+            }, 100);
+        };
+    </script>
+</body>
+
+</html>

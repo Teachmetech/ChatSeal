@@ -61,7 +61,7 @@ export default function CreateChatPage() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      signIn("anonymous");
+      void signIn("anonymous");
     }
   }, [isLoading, isAuthenticated, signIn]);
 
@@ -107,7 +107,7 @@ export default function CreateChatPage() {
       navigate(`/chat/${roomId}`);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to create chat room. Please try again.");
+      toast.error("Failed to create ChatSeal room. Please try again.");
       setIsCreating(false);
     }
   };
@@ -126,7 +126,7 @@ export default function CreateChatPage() {
         Back to Home
       </button>
       <h1 className="text-3xl font-bold text-white mb-2">
-        Create a New Chat
+        Create a New ChatSeal Room
       </h1>
       <p className="text-gray-400 mb-8">
         Fill in the details to start a secure, ephemeral chat room.
@@ -178,7 +178,7 @@ export default function CreateChatPage() {
           {isCreating ? (
             <Loader2 className="animate-spin mx-auto" />
           ) : (
-            "Create & Join Chat"
+            "Create & Join ChatSeal"
           )}
         </button>
       </form>

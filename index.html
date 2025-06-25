@@ -1,16 +1,46 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/src/index.css" />
 
-    <title>Chef</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/src/index.css" />
 
-    <meta property="og:image" content="/og-preview.png" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <link rel="apple-touch-icon" href="/logo.svg" />
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <!-- Theme colors -->
+  <meta name="theme-color" content="#10b981" />
+  <meta name="msapplication-TileColor" content="#10b981" />
+
+  <title>ChatSeal - Secure Ephemeral Chat</title>
+  <meta name="description"
+    content="ChatSeal - Create secure, ephemeral chat rooms with end-to-end encryption. Messages disappear when you want them to." />
+  <meta name="keywords"
+    content="secure chat, ephemeral messaging, end-to-end encryption, private chat, temporary chat" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="ChatSeal - Secure Ephemeral Chat" />
+  <meta property="og:description"
+    content="Create secure, ephemeral chat rooms with end-to-end encryption. Messages disappear when you want them to." />
+  <meta property="og:image" content="/og-preview.png" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ChatSeal - Secure Ephemeral Chat" />
+  <meta name="twitter:description"
+    content="Create secure, ephemeral chat rooms with end-to-end encryption. Messages disappear when you want them to." />
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

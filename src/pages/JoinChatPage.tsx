@@ -38,7 +38,7 @@ function JoinChatContent() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      signIn("anonymous");
+      void signIn("anonymous");
     }
   }, [isLoading, isAuthenticated, signIn]);
 
@@ -104,7 +104,7 @@ function JoinChatContent() {
         <ArrowLeft size={18} />
         Back to Home
       </button>
-      <h1 className="text-3xl font-bold text-white mb-2">Join a Chat</h1>
+      <h1 className="text-3xl font-bold text-white mb-2">Join a ChatSeal Room</h1>
       <p className="text-gray-400 mb-4">
         Enter the Room ID and your details to join.
       </p>
@@ -149,7 +149,7 @@ function JoinChatContent() {
           ) : room === undefined && roomId !== "" && isValidRoomIdFormat(roomId) ? (
             <Loader2 className="animate-spin mx-auto" />
           ) : (
-            "Join Chat"
+            "Join ChatSeal"
           )}
         </button>
         {roomId && isValidRoomIdFormat(roomId) && room === null && (

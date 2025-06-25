@@ -1,0 +1,21 @@
+{
+    "name": "ChatSeal - Secure Ephemeral Chat",
+    "short_name": "ChatSeal",
+    "description": "Create secure, ephemeral chat rooms with end-to-end encryption. Messages disappear when you want them to.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#1f2937",
+    "theme_color": "#10b981",
+    "icons": [
+        {
+            "src": "/logo.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}
